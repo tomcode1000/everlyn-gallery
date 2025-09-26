@@ -41,22 +41,31 @@ const UploadModal = ({ onClose, onUpload }) => {
     setIsUploading(true)
     
     try {
-      // Create object URL for the file
+      // Convert file to ArrayBuffer for proper storage
+      const fileData = await selectedFile.arrayBuffer()
+      
+      // Create object URL for immediate display (will be recreated later)
       const fileUrl = URL.createObjectURL(selectedFile)
       
-      // Create upload object
+      // Create upload object with both URL and raw data
       const upload = {
         username: username.trim(),
         file: {
           url: fileUrl,
           type: selectedFile.type,
           name: selectedFile.name,
-          size: selectedFile.size
+          size: selectedFile.size,
+          data: Array.from(new Uint8Array(fileData)) // Convert to array for JSON serialization
         }
       }
       
       // Call the onUpload callback
       onUpload(upload)
+      
+      // Clean up the temporary URL
+      setTimeout(() => {
+        URL.revokeObjectURL(fileUrl)
+      }, 1000)
       
     } catch (error) {
       console.error('Upload error:', error)

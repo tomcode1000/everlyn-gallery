@@ -12,13 +12,50 @@ function App() {
   useEffect(() => {
     const savedUploads = localStorage.getItem('everlynGalleryUploads')
     if (savedUploads) {
-      setUploads(JSON.parse(savedUploads))
+      try {
+        const parsedUploads = JSON.parse(savedUploads)
+        // Convert the data arrays back to proper format for videos
+        const processedUploads = parsedUploads.map(upload => {
+          if (upload.file && upload.file.data && Array.isArray(upload.file.data)) {
+            return {
+              ...upload,
+              file: {
+                ...upload.file,
+                data: new Uint8Array(upload.file.data)
+              }
+            }
+          }
+          return upload
+        })
+        setUploads(processedUploads)
+      } catch (error) {
+        console.error('Error loading uploads from localStorage:', error)
+        // Clear corrupted data
+        localStorage.removeItem('everlynGalleryUploads')
+      }
     }
   }, [])
 
   // Save uploads to localStorage whenever uploads change
   useEffect(() => {
-    localStorage.setItem('everlynGalleryUploads', JSON.stringify(uploads))
+    try {
+      // Convert Uint8Array data back to regular arrays for JSON serialization
+      const serializedUploads = uploads.map(upload => {
+        if (upload.file && upload.file.data && upload.file.data instanceof Uint8Array) {
+          return {
+            ...upload,
+            file: {
+              ...upload.file,
+              data: Array.from(upload.file.data)
+            }
+          }
+        }
+        return upload
+      })
+      localStorage.setItem('everlynGalleryUploads', JSON.stringify(serializedUploads))
+    } catch (error) {
+      console.error('Error saving uploads to localStorage:', error)
+    }
   }, [uploads])
 
   const handleNewUpload = (newUpload) => {
